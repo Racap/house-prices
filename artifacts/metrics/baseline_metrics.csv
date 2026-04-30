@@ -1,3 +1,2 @@
 version,rmse,mae,r2
 baseline_random_forest,29102.2567,19067.1761,0.8896
-tuned_random_forest,29723.6926,19330.8601,0.8848
