@@ -69,5 +69,5 @@ Las métricas de evaluación se guardan en `artifacts/metrics/model_comparison.c
 
 - `doc.pdf`
 - `slides.pdf`
-- `streamlit.txt`: https://house-prices-v3nrejcyjltytdctev9hgk.streamlit.app/
+- `streamlit.txt`
 - `video.txt`: https://youtu.be/KWWt_EOOM8A
