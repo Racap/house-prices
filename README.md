@@ -70,4 +70,4 @@ Las métricas de evaluación se guardan en `artifacts/metrics/model_comparison.c
 - `doc.pdf`
 - `slides.pdf`
 - `streamlit.txt`
-- `video.txt`: https://youtu.be/KWWt_EOOM8A
+- `video.txt`
