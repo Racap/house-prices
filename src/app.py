@@ -6,7 +6,10 @@ SQFT_PER_M2 = 10.7639
 
 st.title("🏠 Predictor de precios de vivienda")
 st.write("Aplicación desarrollada para AI Foundations — Fundació URV")
-st.caption("Modelo: RandomForestRegressor entrenado con el dataset House Prices (Kaggle).")
+st.caption(
+    "Comparativa entre RandomForestRegressor baseline y modelo con tuning de "
+    "hiperparámetros."
+)
 
 st.subheader("Introduce las características de la vivienda")
 
@@ -35,9 +38,32 @@ feature_values = {
 
 if st.button("Predecir precio"):
     try:
-        prediction = predict_price(feature_values)
-        st.success(f"Precio estimado: ${prediction:,.2f}")
-        st.info("La predicción es orientativa y depende de las variables incluidas en el modelo.")
+        baseline_prediction = predict_price(feature_values, model_name="baseline")
+        tuned_prediction = predict_price(feature_values, model_name="tuned")
+        difference = tuned_prediction - baseline_prediction
+
+        st.subheader("Comparativa de predicción")
+        baseline_col, tuned_col = st.columns(2)
+
+        with baseline_col:
+            st.metric(
+                "Baseline Random Forest",
+                f"${baseline_prediction:,.2f}",
+                help="Modelo base sin ajuste de hiperparámetros.",
+            )
+
+        with tuned_col:
+            st.metric(
+                "Tuned Random Forest",
+                f"${tuned_prediction:,.2f}",
+                delta=f"${difference:,.2f} vs baseline",
+                help="Modelo entrenado con los mejores hiperparámetros del tuning.",
+            )
+
+        st.info(
+            "La diferencia muestra cuánto cambia la predicción del modelo tuneado "
+            "respecto al baseline para las mismas variables de entrada."
+        )
     except FileNotFoundError as exc:
         st.error(str(exc))
     except KeyError as exc:

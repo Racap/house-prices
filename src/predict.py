@@ -8,19 +8,27 @@ import pandas as pd
 
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-MODEL_PATH = ROOT_DIR / "models" / "house_price_model.joblib"
+MODEL_PATHS = {
+    "baseline": ROOT_DIR / "models" / "house_price_model.joblib",
+    "tuned": ROOT_DIR / "models" / "house_price_tuned.joblib",
+}
 
 
-def load_artifact() -> dict:
-    if not MODEL_PATH.exists():
+def load_artifact(model_name: str = "baseline") -> dict:
+    if model_name not in MODEL_PATHS:
+        raise ValueError(f"Modelo no reconocido: {model_name}")
+
+    model_path = MODEL_PATHS[model_name]
+    if not model_path.exists():
         raise FileNotFoundError(
-            "No se encontró el modelo entrenado. Ejecuta primero: python3 src/train.py"
+            f"No se encontró el modelo '{model_name}'. "
+            "Ejecuta primero: python3 src/train.py"
         )
-    return joblib.load(MODEL_PATH)
+    return joblib.load(model_path)
 
 
-def predict_price(input_features: Dict[str, float]) -> float:
-    artifact = load_artifact()
+def predict_price(input_features: Dict[str, float], model_name: str = "baseline") -> float:
+    artifact = load_artifact(model_name)
     model = artifact["model"]
     features = artifact["features"]
 

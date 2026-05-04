@@ -45,7 +45,8 @@ python3 src/train.py
 Este comando:
 
 - entrena un modelo de regresión (`RandomForestRegressor`)
-- guarda el artefacto en `models/house_price_model.joblib`
+- guarda el modelo baseline en `models/house_price_model.joblib`
+- guarda el modelo tuneado en `models/house_price_tuned.joblib`
 - genera métricas en `artifacts/metrics/model_comparison.csv`
 
 ## App Streamlit

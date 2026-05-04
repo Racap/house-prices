@@ -17,7 +17,59 @@ from preprocess import MODEL_FEATURES, TARGET_COLUMN
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = ROOT_DIR / "data" / "train.csv"
 MODEL_PATH = ROOT_DIR / "models" / "house_price_model.joblib"
+TUNED_MODEL_PATH = ROOT_DIR / "models" / "house_price_tuned.joblib"
 METRICS_PATH = ROOT_DIR / "artifacts" / "metrics" / "model_comparison.csv"
+
+BASELINE_PARAMS = {
+    "n_estimators": 300,
+}
+
+TUNED_PARAMS = {
+    "n_estimators": 100,
+    "max_depth": 10,
+    "min_samples_split": 5,
+    "min_samples_leaf": 1,
+    "max_features": "log2",
+}
+
+
+def build_model(params: dict) -> Pipeline:
+    return Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            (
+                "regressor",
+                RandomForestRegressor(
+                    **params,
+                    random_state=42,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
+
+
+def evaluate_model(model: Pipeline, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+    predictions = model.predict(X_test)
+
+    return {
+        "rmse": float(np.sqrt(mean_squared_error(y_test, predictions))),
+        "mae": float(mean_absolute_error(y_test, predictions)),
+        "r2": float(r2_score(y_test, predictions)),
+    }
+
+
+def save_artifact(model: Pipeline, path: Path, version: str, params: dict) -> None:
+    joblib.dump(
+        {
+            "model": model,
+            "features": MODEL_FEATURES,
+            "target": TARGET_COLUMN,
+            "version": version,
+            "params": params,
+        },
+        path,
+    )
 
 
 def train_and_evaluate() -> None:
@@ -30,55 +82,63 @@ def train_and_evaluate() -> None:
         X, y, test_size=0.2, random_state=42
     )
 
-    model = Pipeline(
-        steps=[
-            ("imputer", SimpleImputer(strategy="median")),
-            (
-                "regressor",
-                RandomForestRegressor(
-                    n_estimators=300,
-                    random_state=42,
-                    n_jobs=-1,
-                ),
-            ),
-        ]
-    )
-
-    model.fit(X_train, y_train)
-    predictions = model.predict(X_test)
-
-    rmse = float(np.sqrt(mean_squared_error(y_test, predictions)))
-    mae = float(mean_absolute_error(y_test, predictions))
-    r2 = float(r2_score(y_test, predictions))
-
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    joblib.dump(
-        {
-            "model": model,
-            "features": MODEL_FEATURES,
-            "target": TARGET_COLUMN,
-        },
+    baseline_model = build_model(BASELINE_PARAMS)
+    baseline_model.fit(X_train, y_train)
+    baseline_metrics = evaluate_model(baseline_model, X_test, y_test)
+    save_artifact(
+        baseline_model,
         MODEL_PATH,
+        "baseline_random_forest",
+        BASELINE_PARAMS,
+    )
+
+    tuned_model = build_model(TUNED_PARAMS)
+    tuned_model.fit(X_train, y_train)
+    tuned_metrics = evaluate_model(tuned_model, X_test, y_test)
+    save_artifact(
+        tuned_model,
+        TUNED_MODEL_PATH,
+        "tuned_random_forest",
+        TUNED_PARAMS,
     )
 
     metrics_df = pd.DataFrame(
         [
             {
                 "version": "baseline_random_forest",
-                "rmse": round(rmse, 4),
-                "mae": round(mae, 4),
-                "r2": round(r2, 4),
+                "rmse": round(baseline_metrics["rmse"], 4),
+                "mae": round(baseline_metrics["mae"], 4),
+                "r2": round(baseline_metrics["r2"], 4),
+            },
+            {
+                "version": "tuned_random_forest",
+                "rmse": round(tuned_metrics["rmse"], 4),
+                "mae": round(tuned_metrics["mae"], 4),
+                "r2": round(tuned_metrics["r2"], 4),
             }
         ]
     )
     metrics_df.to_csv(METRICS_PATH, index=False)
 
     print("Entrenamiento completado.")
-    print(f"Modelo guardado en: {MODEL_PATH}")
+    print(f"Modelo baseline guardado en: {MODEL_PATH}")
+    print(f"Modelo tuned guardado en: {TUNED_MODEL_PATH}")
     print(f"Métricas guardadas en: {METRICS_PATH}")
-    print(f"RMSE: {rmse:.2f} | MAE: {mae:.2f} | R2: {r2:.4f}")
+    print(
+        "Baseline "
+        f"RMSE: {baseline_metrics['rmse']:.2f} | "
+        f"MAE: {baseline_metrics['mae']:.2f} | "
+        f"R2: {baseline_metrics['r2']:.4f}"
+    )
+    print(
+        "Tuned "
+        f"RMSE: {tuned_metrics['rmse']:.2f} | "
+        f"MAE: {tuned_metrics['mae']:.2f} | "
+        f"R2: {tuned_metrics['r2']:.4f}"
+    )
 
 
 if __name__ == "__main__":
